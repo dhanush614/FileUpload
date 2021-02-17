@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Large File Upload</title>
+<style>
+.bgCover {
+	background-image: url('bg.jpg');
+	background-repeat: no-repeat;
+	background-size: cover;
+	text-align: center;
+}
+
+.alignForm {
+	display: inline-block;
+}
+</style>
+</head>
+<body class="bgCover">
+	<form class="alignForm" method="post" onSubmit="return uploadFile()">
+		<input type="file" id="importFile" name="importFile" /><br> <br>
+		<input type="submit" value="Upload" />
+	</form>
+	<script type="text/javascript">
+		function uploadFile() {
+			var file = document.getElementById('importFile').files[0];
+			var size = file.size;
+			var sliceSize = 50000000;
+			var start = 0;
+			console.log('Sending File of Size: ' + size);
+			send(file, 0, sliceSize);
+			function send(file, start, end) {
+				var formdata = new FormData();
+				var xhr = new XMLHttpRequest();
+				if (size - end < 0) {
+					end = size;
+				}
+				if (end < size) {
+					xhr.onreadystatechange = function() {
+						if (xhr.readyState == XMLHttpRequest.DONE) {
+							console.log('Done Sending Chunk');
+							send(file, start + sliceSize, start
+									+ (sliceSize * 2))
+						}
+					}
+				} else {
+					console.log('Upload complete');
+				}
+
+				xhr.open('POST', '/uploadChunk', true);
+
+				var slicedPart = slice(file, start, end);
+
+				formdata.append('file', slicedPart);
+				formdata.append('fileSize', size);
+				console
+						.log('Sending Chunk (Start - End): ' + start + ' '
+								+ end);
+
+				xhr.send(formdata);
+			}
+			function slice(file, start, end) {
+				var slice = file.mozSlice ? file.mozSlice
+						: file.webkitSlice ? file.webkitSlice
+								: file.slice ? file.slice : noop;
+
+				return slice.bind(file)(start, end);
+			}
+			function noop() {
+
+			}
+			return false;
+		}
+	</script>
+</body>
+</html>
